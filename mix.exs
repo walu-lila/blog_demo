@@ -52,6 +52,8 @@ defmodule Myapp.MixProject do
        app: false,
        compile: false,
        depth: 1},
+      {:material_icons,
+       github: "marella/material-symbols", sparse: "svg/400", app: false, compile: false, depth: 1},
       {:swoosh, "~> 1.16"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
