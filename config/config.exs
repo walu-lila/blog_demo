@@ -33,16 +33,10 @@ config :myapp, MyappWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Myapp.PubSub,
-  live_view: [signing_salt: "GkZs+o4a"]
-
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :myapp, Myapp.Mailer, adapter: Swoosh.Adapters.Local
+  live_view: [signing_salt: "GkZs+o4a"],
+  code_reloader: config_env() == :dev,
+  debug_errors: config_env() == :dev,
+  check_origin: config_env() == :prod
 
 # Configure esbuild (the version is required)
 config :esbuild,
@@ -73,6 +67,49 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Import environment specific config. This must remain at the bottom
-# of this file so it overrides the configuration defined above.
-import_config "#{config_env()}.exs"
+if config_env() == :test do
+    config :bcrypt_elixir, :log_rounds, 1
+
+    config :myapp, Myapp.Repo,
+        pool: Ecto.Adapters.SQL.Sandbox,
+        pool_size: System.schedulers_online() * 2
+
+    config :logger, level: :warning
+
+    config :phoenix, :plug_init_mode, :runtime
+
+    config :phoenix_live_view, enable_expensive_runtime_checks: true
+end
+
+if config_env() == :dev do
+config :myapp, MyappWeb.Endpoint,
+  watchers: [
+    esbuild: {Esbuild, :install_and_run, [:myapp, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:myapp, ~w(--watch)]}
+  ],
+  live_reload: [
+    web_console_logger: true,
+    patterns: [
+      ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"priv/gettext/.*(po)$",
+      ~r"lib/myapp_web/(controllers|live|components)/.*(ex|heex)$"
+    ]
+  ]
+
+config :myapp, dev_routes: true
+
+config :logger, :default_formatter, format: "[$level] $message\n"
+
+config :phoenix, :stacktrace_depth, 20
+
+config :phoenix, :plug_init_mode, :runtime
+
+config :phoenix_live_view,
+  debug_heex_annotations: true,
+  enable_expensive_runtime_checks: true
+
+end
+
+if config_env() == :prod do
+    config :logger, level: :info
+end
