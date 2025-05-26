@@ -1,5 +1,11 @@
 # Myapp
 
+This is a demo app used to show features that are talked about in [my blog](https://ambrosemungai.com).
+
+Each blog article will have it own PR that will be merged.
+
+## Phoenix stuff
+
 To start your Phoenix server:
 
 * Run `mix setup` to install and setup dependencies
