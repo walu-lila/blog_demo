@@ -1,0 +1,82 @@
+volumes:
+  production_traefik: {}
+
+services:
+  traefik:
+    image: traefik:v2.9
+    container_name: traefik
+    networks:
+      - myapp_network
+    depends_on:
+      - main
+    volumes:
+      - production_traefik:/etc/traefik/acme
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - '0.0.0.0:80:80'
+      - '0.0.0.0:443:443'
+    restart: unless-stopped
+    logging:
+      driver: gcplogs
+      options:
+        labels: traefik
+    labels:
+      - "application=traefik"
+    command:
+      - --log.level=INFO
+      - --entryPoints.web.address=:80
+      - --entryPoints.web.http.redirections.entryPoint.to=web-secure
+      - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      - --entryPoints.web-secure.address=:443
+      - --certificatesResolvers.letsencrypt.acme.email=support@myapp.com
+      - --certificatesResolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
+      - --certificatesResolvers.letsencrypt.acme.httpChallenge.entryPoint=web
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+
+  main:
+    container_name: main_phoenix_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./envs/.production.env
+    expose:
+      - "5000"
+    labels:
+      - "application=main_phoenix_app"
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.csrf.headers.hostsproxyheaders=X-CSRFToken"
+      - "traefik.http.middlewares.redirect-https-www.redirectregex.regex=^https?://www\\.(.+)"
+      - "traefik.http.middlewares.redirect-https-www.redirectregex.replacement=https://$${1}"
+      - "traefik.http.middlewares.redirect-https-www.redirectregex.permanent=true"
+      - "traefik.http.middlewares.forwarded-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.main.rule=(Host(`${ENDPOINT_URL_HOST}`) || Host(`www.${ENDPOINT_URL_HOST}`)) && PathPrefix(`/`)"
+      - "traefik.http.routers.main.priority=1"
+      - "traefik.http.routers.main.entryPoints=web-secure"
+      - "traefik.http.routers.main.middlewares=redirect-https-www,csrf,forwarded-headers"
+      - "traefik.http.routers.main.tls.certResolver=letsencrypt"
+      - "traefik.http.routers.main.tls=true"
+      - "traefik.http.services.main.loadBalancer.server.port=${PORT}"
+    volumes:
+      - type: bind
+        source: ./security_key.json
+        target: /security_key.json
+        read_only: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - cloudsql-proxy
+    networks:
+      - myapp_network
+    restart: unless-stopped
+    logging:
+      driver: gcplogs
+      options:
+        labels: main_phoenix_app
+
+networks:
+  myapp_network:
