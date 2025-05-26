@@ -408,6 +408,12 @@ defmodule MyappWeb.CoreComponents do
     """
   end
 
+  def icon(%{name: "material-" <> _} = assigns) do
+    ~H"""
+    <span class={[@name, @class]} aria-hidden="true" {@rest} />
+    """
+  end
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do
