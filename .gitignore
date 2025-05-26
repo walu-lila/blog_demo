@@ -35,3 +35,8 @@ myapp-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Ignore all env files
+/envs/.env
+/envs/.dev.env
+/envs/.test.env
+/envs/.prod.env

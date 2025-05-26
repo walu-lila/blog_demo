@@ -4,6 +4,10 @@ This is a demo app used to show features that are talked about in [my blog](http
 
 Each blog article will have it own PR that will be merged.
 
+## To run the application 
+
+Copy the [example .env file](./envs/.env.example) to `envs/.dev.env` and `envs/.test.env` and update to your local settings
+
 ## Phoenix stuff
 
 To start your Phoenix server:
